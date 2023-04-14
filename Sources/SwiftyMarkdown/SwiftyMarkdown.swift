@@ -12,10 +12,12 @@ import AppKit
 import UIKit
 #endif
 
+#if SM_ENABLE_PERFORMANCE_LOGGING
 extension OSLog {
-	private static var subsystem = "SwiftyMarkdown"
-	static let swiftyMarkdownPerformance = OSLog(subsystem: subsystem, category: "Swifty Markdown Performance")
+    private static var subsystem = "SwiftyMarkdown"
+    static let swiftyMarkdownPerformance = OSLog(subsystem: subsystem, category: "Swifty Markdown Performance")
 }
+#endif
 
 public enum CharacterStyle : CharacterStyling {
 	case none
@@ -268,7 +270,9 @@ If that is not set, then the system default will be used.
 	
 	var applyAttachments = true
 	
-	let perfomanceLog = PerformanceLog(with: "SwiftyMarkdownPerformanceLogging", identifier: "Swifty Markdown", log: .swiftyMarkdownPerformance)
+    #if SM_ENABLE_PERFORMANCE_LOGGING
+    let perfomanceLog = PerformanceLog(with: "SwiftyMarkdownPerformanceLogging", identifier: "Swifty Markdown", log: .swiftyMarkdownPerformance)
+    #endif
 		
 	/**
 	
@@ -392,7 +396,9 @@ If that is not set, then the system default will be used.
 	open func attributedString(from markdownString : String? = nil) -> NSAttributedString {
 		
 		self.previouslyFoundTokens.removeAll()
-		self.perfomanceLog.start()
+        #if SM_ENABLE_PERFORMANCE_LOGGING
+        self.perfomanceLog.start()
+        #endif
 		
 		if let existentMarkdownString = markdownString {
 			self.string = existentMarkdownString
@@ -418,7 +424,9 @@ If that is not set, then the system default will be used.
 			keyValuePairs[key] = strings[1].trimmingCharacters(in: .whitespacesAndNewlines)
 		}
 		
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.perfomanceLog.tag(with: "(line processing complete)")
+        #endif
 		
 		self.tokeniser.metadataLookup = keyValuePairs
 		
@@ -428,13 +436,17 @@ If that is not set, then the system default will be used.
 			}
 			let finalTokens = self.tokeniser.process(line.line)
 			self.previouslyFoundTokens.append(contentsOf: finalTokens)
-			self.perfomanceLog.tag(with: "(tokenising complete for line \(idx)")
+            #if SM_ENABLE_PERFORMANCE_LOGGING
+            self.perfomanceLog.tag(with: "(tokenising complete for line \(idx)")
+            #endif
 			
 			attributedString.append(attributedStringFor(tokens: finalTokens, in: line))
 			
 		}
 		
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.perfomanceLog.end()
+        #endif
 		
 		return attributedString
 	}

@@ -9,10 +9,12 @@
 import Foundation
 import os.log
 
+#if SM_ENABLE_PERFORMANCE_LOGGING
 extension OSLog {
 	private static var subsystem = "SwiftyLineProcessor"
 	static let swiftyLineProcessorPerformance = OSLog(subsystem: subsystem, category: "Swifty Line Processor Performance")
 }
+#endif
 
 public protocol LineStyling {
     var shouldTokeniseLine : Bool { get }
@@ -80,7 +82,9 @@ public class SwiftyLineProcessor {
     let lineRules : [LineRule]
 	let frontMatterRules : [FrontMatterRule]
 	
+    #if SM_ENABLE_PERFORMANCE_LOGGING
 	let perfomanceLog = PerformanceLog(with: "SwiftyLineProcessorPerformanceLogging", identifier: "Line Processor", log: OSLog.swiftyLineProcessorPerformance)
+    #endif
 	    
 	public init( rules : [LineRule], defaultRule: LineStyling, frontMatterRules : [FrontMatterRule] = []) {
         self.lineRules = rules
@@ -211,13 +215,16 @@ public class SwiftyLineProcessor {
     public func process( _ string : String ) -> [SwiftyLine] {
         var foundAttributes : [SwiftyLine] = []
 		
-		
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.perfomanceLog.start()
+        #endif
 		
 		var lines = string.components(separatedBy: CharacterSet.newlines)
 		lines = self.processFrontMatter(lines)
 		
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.perfomanceLog.tag(with: "(Front matter completed)")
+        #endif
 		
 
         for  heading in lines {
@@ -239,7 +246,9 @@ public class SwiftyLineProcessor {
             }
             foundAttributes.append(input)
 			
+            #if SM_ENABLE_PERFORMANCE_LOGGING
 			self.perfomanceLog.tag(with: "(line completed: \(heading)")
+            #endif
         }
         return foundAttributes
     }

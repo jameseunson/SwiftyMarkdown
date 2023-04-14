@@ -46,12 +46,10 @@ class SwiftyScanner {
 	
 	var isMetadataOpen = false
 	
-	
-	var enableLog = (ProcessInfo.processInfo.environment["SwiftyScannerScanner"] != nil)
-	
+    #if SM_ENABLE_PERFORMANCE_LOGGING
 	let currentPerfomanceLog = PerformanceLog(with: "SwiftyScannerScannerPerformanceLogging", identifier: "Scanner", log: OSLog.swiftyScannerPerformance)
 	let log = PerformanceLog(with: "SwiftyScannerScanner", identifier: "Scanner", log: OSLog.swiftyScanner)
-		
+    #endif
 	
 	
 	enum Position {
@@ -62,8 +60,10 @@ class SwiftyScanner {
 	init( withElements elements : [Element], rule : CharacterRule, metadata : [String : String]) {
 		self.elements = elements
 		self.rule = rule
-		self.currentPerfomanceLog.start()
 		self.metadata = metadata
+        #if SM_ENABLE_PERFORMANCE_LOGGING
+        self.currentPerfomanceLog.start()
+        #endif
 	}
 	
 	func elementsBetweenCurrentPosition( and newPosition : Position ) -> [Element]? {
@@ -220,9 +220,9 @@ class SwiftyScanner {
 			let metadataOpenRange = self.tagGroups[tagIdx].tagRanges.removeLast()
 			
 			if metadataOpenRange.upperBound + 1 == (metadataCloseRange.lowerBound) {
-				if self.enableLog {
-					os_log("Nothing between the tags", log: OSLog.swiftyScanner, type:.info , self.rule.description)
-				}
+                #if SM_ENABLE_PERFORMANCE_LOGGING
+                os_log("Nothing between the tags", log: OSLog.swiftyScanner, type:.info , self.rule.description)
+                #endif
 			} else {
 				for idx in (metadataOpenRange.upperBound)...(metadataCloseRange.lowerBound) {
 					self.elements[idx].type = .metadata
@@ -253,9 +253,9 @@ class SwiftyScanner {
 		var shouldRemove = true
 		var styles : [CharacterStyling] = []
 		if openRange.upperBound + 1 == (closeRange.lowerBound) {
-			if self.enableLog {
-				os_log("Nothing between the tags", log: OSLog.swiftyScanner, type:.info , self.rule.description)
-			}
+            #if SM_ENABLE_PERFORMANCE_LOGGING
+            os_log("Nothing between the tags", log: OSLog.swiftyScanner, type:.info , self.rule.description)
+            #endif
 		} else {
 			var remainingTags = min(openRange.upperBound - openRange.lowerBound, closeRange.upperBound - closeRange.lowerBound) + 1
 			while remainingTags > 0 {
@@ -323,9 +323,9 @@ class SwiftyScanner {
 		let metadataClose = self.rule.tag(for: .metadataClose)?.tag
 		
 		while self.pointer < self.elements.count {
-			if self.enableLog {
-				os_log("CHARACTER: %@", log: OSLog.swiftyScanner, type:.info , String(self.elements[self.pointer].character))
-			}
+            #if SM_ENABLE_PERFORMANCE_LOGGING
+            os_log("CHARACTER: %@", log: OSLog.swiftyScanner, type:.info , String(self.elements[self.pointer].character))
+            #endif
 			
 			if let range = self.range(for: metadataClose) {
 				if self.isMetadataOpen {
@@ -344,9 +344,9 @@ class SwiftyScanner {
 						self.resetTagGroup(withID: groupID)
 						continue
 					}
-					if self.enableLog {
-						os_log("Closing metadata tag found. Closing tag with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
-					}
+                    #if SM_ENABLE_PERFORMANCE_LOGGING
+                    os_log("Closing metadata tag found. Closing tag with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
+                    #endif
 					self.tagGroups[groupIdx].tagRanges.append(range)
 					self.closeTag(closeTag!, withGroupID: groupID)
 					self.isMetadataOpen = false
@@ -365,9 +365,9 @@ class SwiftyScanner {
 				
 				let tagGroup = TagGroup(tagRanges: [openRange])
 				groupID = tagGroup.groupID
-				if self.enableLog {
-					os_log("New open tag found. Starting new Group with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
-				}
+                #if SM_ENABLE_PERFORMANCE_LOGGING
+                os_log("New open tag found. Starting new Group with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
+                #endif
 				if self.rule.isRepeatingTag {
 					
 				}
@@ -378,21 +378,21 @@ class SwiftyScanner {
 	
 			if let range = self.range(for: closeTag) {
 				guard !self.tagGroups.isEmpty else {
-					if self.enableLog {
-						os_log("No open tags exist, resetting this close tag", log: OSLog.swiftyScanner, type:.info)
-					}
+                    #if SM_ENABLE_PERFORMANCE_LOGGING
+                    os_log("No open tags exist, resetting this close tag", log: OSLog.swiftyScanner, type:.info)
+                    #endif
 					self.resetTag(in: range)
 					continue
 				}
 				self.tagGroups[self.tagGroups.count - 1].tagRanges.append(range)
 				groupID = self.tagGroups[self.tagGroups.count - 1].groupID
-				if self.enableLog {
-					os_log("New close tag found. Appending to group with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
-				}
+                #if SM_ENABLE_PERFORMANCE_LOGGING
+                os_log("New close tag found. Appending to group with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
+                #endif
 				guard metadataOpen != nil else {
-					if self.enableLog {
-						os_log("No metadata tags exist, closing valid tag with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
-					}
+                    #if SM_ENABLE_PERFORMANCE_LOGGING
+                    os_log("No metadata tags exist, closing valid tag with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
+                    #endif
 					self.closeTag(closeTag!, withGroupID: groupID)
 					continue
 				}
@@ -402,9 +402,9 @@ class SwiftyScanner {
 				}
 				
 				guard let range = self.range(for: metadataOpen) else {
-					if self.enableLog {
-						os_log("No metadata tag found, resetting group with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
-					}
+                    #if SM_ENABLE_PERFORMANCE_LOGGING
+                    os_log("No metadata tag found, resetting group with ID %@", log: OSLog.swiftyScanner, type:.info , groupID)
+                    #endif
 					self.resetTagGroup(withID: groupID)
 					continue
 				}
@@ -415,9 +415,9 @@ class SwiftyScanner {
 			
 
 			if let range = self.range(for: metadataOpen) {
-				if self.enableLog {
-					os_log("Multiple open metadata tags found!", log: OSLog.swiftyScanner, type:.info , groupID)
-				}
+                #if SM_ENABLE_PERFORMANCE_LOGGING
+                os_log("Multiple open metadata tags found!", log: OSLog.swiftyScanner, type:.info , groupID)
+                #endif
 				self.resetTag(in: range)
 				self.resetTagGroup(withID: groupID)
 				self.isMetadataOpen = false
@@ -433,9 +433,9 @@ class SwiftyScanner {
 		let escapeCharacters = "" //self.rule.escapeCharacters.map( { String( $0 ) }).joined()
 		let unionSet = spaceAndNewLine.union(CharacterSet(charactersIn: escapeCharacters))
 		while self.pointer < self.elements.count {
-			if self.enableLog {
-				os_log("CHARACTER: %@", log: OSLog.swiftyScanner, type:.info , String(self.elements[self.pointer].character))
-			}
+            #if SM_ENABLE_PERFORMANCE_LOGGING
+            os_log("CHARACTER: %@", log: OSLog.swiftyScanner, type:.info , String(self.elements[self.pointer].character))
+            #endif
 			
 			if var openRange = self.range(for: self.rule.primaryTag.tag) {
 				
@@ -485,9 +485,9 @@ class SwiftyScanner {
 				}
 				
 				if !validTagGroup {
-					if self.enableLog {
-						os_log("Tag has whitespace on both sides", log: .swiftyScanner, type: .info)
-					}
+                    #if SM_ENABLE_PERFORMANCE_LOGGING
+                    os_log("Tag has whitespace on both sides", log: .swiftyScanner, type: .info)
+                    #endif
 					self.resetTag(in: openRange)
 					continue
 				}
@@ -519,9 +519,9 @@ class SwiftyScanner {
 				tagGroup.tagType = tagType
 				tagGroup.count = count
 				
-				if self.enableLog {
-					os_log("New open tag found with characters %@. Starting new Group with ID %@", log: OSLog.swiftyScanner,  type:.info, self.elements[openRange].map( { String($0.character) }).joined(), groupID)
-				}
+                #if SM_ENABLE_PERFORMANCE_LOGGING
+                os_log("New open tag found with characters %@. Starting new Group with ID %@", log: OSLog.swiftyScanner,  type:.info, self.elements[openRange].map( { String($0.character) }).joined(), groupID)
+                #endif
 				
 				self.tagGroups.append(tagGroup)
 				continue
@@ -538,11 +538,11 @@ class SwiftyScanner {
 			return self.elements
 		}
 		
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.currentPerfomanceLog.tag(with: "Beginning \(self.rule.primaryTag.tag)")
 		
-		if self.enableLog {
-			os_log("RULE: %@", log: OSLog.swiftyScanner, type:.info , self.rule.description)
-		}
+        os_log("RULE: %@", log: OSLog.swiftyScanner, type:.info , self.rule.description)
+        #endif
 		
 		if self.rule.isRepeatingTag {
 			self.scanRepeatingTags()
@@ -554,11 +554,11 @@ class SwiftyScanner {
 			self.resetTagGroup(withID: tagGroup.groupID)
 		}
 		
-		if self.enableLog {
-			for element in self.elements {
-				print(element)
-			}
-		}
+        #if SM_ENABLE_PERFORMANCE_LOGGING
+        for element in self.elements {
+            print(element)
+        }
+        #endif
 		return self.elements
 	}
 }

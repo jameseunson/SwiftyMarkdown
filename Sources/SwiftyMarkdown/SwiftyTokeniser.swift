@@ -8,20 +8,24 @@
 import Foundation
 import os.log
 
+#if SM_ENABLE_PERFORMANCE_LOGGING
 extension OSLog {
 	private static var subsystem = "SwiftyTokeniser"
 	static let tokenising = OSLog(subsystem: subsystem, category: "Tokenising")
 	static let styling = OSLog(subsystem: subsystem, category: "Styling")
 	static let performance = OSLog(subsystem: subsystem, category: "Peformance")
 }
+#endif
 
 public class SwiftyTokeniser {
 	let rules : [CharacterRule]
 	var replacements : [String : [Token]] = [:]
 	
+    #if SM_ENABLE_PERFORMANCE_LOGGING
 	var enableLog = (ProcessInfo.processInfo.environment["SwiftyTokeniserLogging"] != nil)
 	let totalPerfomanceLog = PerformanceLog(with: "SwiftyTokeniserPerformanceLogging", identifier: "Tokeniser Total Run Time", log: OSLog.performance)
 	let currentPerfomanceLog = PerformanceLog(with: "SwiftyTokeniserPerformanceLogging", identifier: "Tokeniser Current", log: OSLog.performance)
+    #endif
 		
 	public var metadataLookup : [String : String] = [:]
 	
@@ -32,11 +36,15 @@ public class SwiftyTokeniser {
 	public init( with rules : [CharacterRule] ) {
 		self.rules = rules
 		
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.totalPerfomanceLog.start()
+        #endif
 	}
 	
 	deinit {
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.totalPerfomanceLog.end()
+        #endif
 	}
 	
 	
@@ -62,7 +70,9 @@ public class SwiftyTokeniser {
 			return [Token(type: .string, inputString: "", characterStyles: [])]
 		}
 		
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.currentPerfomanceLog.start()
+        #endif
 	
 		var elementArray : [Element] = []
 		for char in inputString {
@@ -82,11 +92,13 @@ public class SwiftyTokeniser {
 		
 		while !mutableRules.isEmpty {
 			let nextRule = mutableRules.removeFirst()
+            #if SM_ENABLE_PERFORMANCE_LOGGING
 			if enableLog {
 				os_log("------------------------------", log: .tokenising, type: .info)
 				os_log("RULE: %@", log: OSLog.tokenising, type:.info , nextRule.description)
 			}
 			self.currentPerfomanceLog.tag(with: "(start rule %@)")
+            #endif
 			
 			let scanner = SwiftyScanner(withElements: elementArray, rule: nextRule, metadata: self.metadataLookup)
 			elementArray = scanner.scan()
@@ -124,12 +136,14 @@ public class SwiftyTokeniser {
 		}
 		empty(&accumulatedString, into: &output)
 		
+        #if SM_ENABLE_PERFORMANCE_LOGGING
 		self.currentPerfomanceLog.tag(with: "(finished all rules)")
 		
 		if enableLog {
 			os_log("=====RULE PROCESSING COMPLETE=====", log: .tokenising, type: .info)
 			os_log("==================================", log: .tokenising, type: .info)
 		}
+        #endif
 		return output
 	}
 }
